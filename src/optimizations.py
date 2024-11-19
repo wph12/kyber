@@ -1,0 +1,7 @@
+"""
+optimizations
+
+TODO
+NTT
+Compression 
+"""

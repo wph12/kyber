@@ -29,7 +29,7 @@ def mul_vec_simple(v0, v1, f, q):
     params: 
         v0(int[k][n]):  vector representing a polynomial. easier to think of this as a list of polynomial[k]
         v1(int[k][n]):  vector representing a polynomial
-        f (int[n]): reduction polynomial's coefficients
+        f (int[n+1]): reduction polynomial's coefficients
         q(int): plain modulo for operations in Z_q
     returns:
         result(int[n]): vector representing a polynomial
@@ -53,7 +53,7 @@ def mul_mat_vec_simple(M, a, f, q):
     params: 
         M(int[k][k][n]):  matrix of polynomials. easier to think of this as a matrix of polynomial[k][k]
         a(int[k][n]):  vector representing a polynomial. easier to think of this as a list of polynomial[k]
-        f (int[n]): reduction polynomial's coefficients
+        f (int[n+1]): reduction polynomial's coefficients
         q(int): plain modulo for operations in Z_q
     returns:
         result(int[k][n]): vector representing a polynomial
@@ -96,4 +96,8 @@ def test_mul_vec(N, k, f, q):
 
     assert(m_mul_a == m_mul_a_ref)
 
-test_mul_vec(100, 2, [1, 0, 0, 0, 1], 17)
+def main():
+    test_mul_vec(100, 2, [1, 0, 0, 0, 1], 17)
+
+if __name__ == "__main__":
+    main()

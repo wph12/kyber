@@ -1,11 +1,11 @@
 from polynomials import *
 from module import * 
 import math
+import secrets
 
-def naive_sample_binom(n ,k, eta):
+def sample_binom(n ,k, eta):
     """
     samples array of k integers from central binomial distribution
-    note: numpy is not cryptographically secure
 
     params:
         n (int): number of elements in a polynomial. given by deg(f)
@@ -14,6 +14,36 @@ def naive_sample_binom(n ,k, eta):
     returns:
         result (int[k][n]): polynomial vector with coefficients of range [-eta, eta]
     """
+    depth = 2 * eta
+    choice_arr = []
+    for i in range(-eta, eta+1):
+        counts = math.comb(2*eta, eta+i)
+        choice_arr.extend(counts * [i]) 
+    
+    result = []
+    for i in range(k):
+        arr = []
+        for j in range(n):
+            arr.append(secrets.choice(choice_arr))
+        result.append(arr)
+    
+    return result
+
+def naive_sample_binom(n ,k, eta, r = b'\xb8', counter=0):
+    """
+    samples array of k integers from central binomial distribution
+    note: numpy is not cryptographically secure. 
+
+    params:
+        n (int): number of elements in a polynomial. given by deg(f)
+        k (int): length of array to sample
+        eta (int): maximum absolute polynomial coefficient
+        r (bytes): bytestream to act as seed
+        counter(int): counter to offset r  
+    returns:
+        result (int[k][n]): polynomial vector with coefficients of range [-eta, eta]
+    """
+    rng = np.random.default_rng(seed = int.from_bytes(r, 'little') + counter)
     depth = 2 * eta
     binom_coefficients = np.array([math.comb(depth, k) for k in range(depth + 1)])
     choice_arr = [0]
@@ -24,19 +54,19 @@ def naive_sample_binom(n ,k, eta):
     probs_arr = binom_coefficients / np.sum(binom_coefficients)
     result = []
     for i in range(k):
-        result.append(np.random.choice(choice_arr, size=n, p= probs_arr).tolist())
-    
+        result.append(rng.choice(choice_arr, size=n, p= probs_arr).tolist())
+
     return result
+
 
 
 def naive_keygen(q, f, n, k, eta_1=2, eta_2=2):
     """
     naive key generation function for kyber-PKE. operations are done in polynomial ring R := Z_q[x]/f(x)
-    note: numpy is not cryptographically secure
 
     params:
         q (int): plain modulo for operations in Z_q
-        f (int[n]): reduction polynomial's coefficients
+        f (int[n+1]): reduction polynomial's coefficients
         n (int): number of elements in a polynomial. given by deg(f)
         k (int): number of polynomials in a polynomial vector
         eta_1 (int): maximum absolute polynomial coefficient for secret key, error
@@ -46,9 +76,9 @@ def naive_keygen(q, f, n, k, eta_1=2, eta_2=2):
         t (int[k][n] aka polynomial[k]): polynomial vector. part of the public key.
         s (int[k][n]): polynomial vector representing the secret key
     """ 
-    A = (np.random.random([k, k, n]) * q).astype(int)
-    s = naive_sample_binom(n,k, eta_1)
-    e = naive_sample_binom(n,k, eta_2)
+    A = (np.random.random([k, k, n]) * q).astype(int) #naive: don't use np.random for secure implementations
+    s = sample_binom(n,k, eta_1)
+    e = sample_binom(n,k, eta_2)
     t = add_vec(mul_mat_vec_simple(A, s, f, q), e, q)
     return A, s, t
 
@@ -62,7 +92,7 @@ def encrypt(A, t, m_b, q, f, n, k, eta_1 = 2, eta_2 = 2):
         t (int[k][n] aka polynomial[k]): polynomial vector. part of the public key.
         m_b (int[n]): message to encrypt, represented as a binary polynomial.
         q (int): plain modulo for operations in Z_q
-        f (int[n]): reduction polynomial's coefficients
+        f (int[n+1]): reduction polynomial's coefficients
         n (int): number of elements in a polynomial. given by deg(f)
         k (int): number of polynomials in a polynomial vector
         eta_1 (int): maximum absolute polynomial coefficient for secret key, error
@@ -75,9 +105,9 @@ def encrypt(A, t, m_b, q, f, n, k, eta_1 = 2, eta_2 = 2):
     half_q = int(q / 2 + 0.5)
     m = list(map(lambda x: x * half_q, m_b))
 
-    r = naive_sample_binom(n,k, eta_1)
-    e_1 = naive_sample_binom(n,k, eta_2)
-    e_2 = naive_sample_binom(n,1, eta_2)[0]
+    r = sample_binom(n,k, eta_1)
+    e_1 = sample_binom(n,k, eta_2)
+    e_2 = sample_binom(n,1, eta_2)[0]
 
     u = add_vec(mul_mat_vec_simple(transpose(A), r, f, q), e_1, q)
     v = sub_poly(add_poly(mul_vec_simple(t, r, f, q), e_2, q), m, q)
@@ -93,7 +123,7 @@ def decrypt(s, u, v, f, q):
         s (int[k][n]): polynomial vector representing the secret key
         u (int[k][n] aka polynomial[k]): polynomial vector. part of the ciphertext
         v (int[n]): polynomial. part of the ciphertext 
-        f (int[n]): reduction polynomial's coefficients
+        f (int[n+1]): reduction polynomial's coefficients
         q (int): plain modulo for operations in Z_q
  
     returns: 
@@ -143,4 +173,10 @@ def test_enc_dec(N, k, f, q):
     print(f"[k={k}, f={f}, q={q}] Test result: {failed}/{N} failed decryption!")
 
 
-test_enc_dec(100, 2, [1, 0, 0, 0, 1], 67)
+def main():
+    test_enc_dec(1, 2, [1, 0, 0, 0, 1], 67)
+
+    print(naive_sample_binom(4,2,2))
+
+if __name__ == "__main__":
+    main()

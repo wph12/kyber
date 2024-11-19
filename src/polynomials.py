@@ -103,5 +103,9 @@ def test_mul_poly(N, f, q):
 
         assert(a_mul_b == a_mul_b_ref)
 
-np.random.seed(0x71904)
-test_mul_poly(100, [1, 0, 0, 0, 1], 17)
+def main():
+    np.random.seed(0x71904)
+    test_mul_poly(100, [1, 0, 0, 0, 1], 17)
+
+if __name__ == "__main__":
+    main()
