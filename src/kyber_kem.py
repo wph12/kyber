@@ -87,18 +87,6 @@ class kyber_kem():
         """
         return secrets.token_bytes(num_bytes)
     
-    def get_random_bytes_bad(self,num_bytes):
-        """
-        get random bytestream 
-
-        params:
-            num_bytes (int): number of non-fixed bytes
-        
-        returns: 
-            random bytestream containing num_bytes bytes
-        """
-        return secrets.token_bytes(num_bytes)
-
     def expand(self, rho):
         """
         expand rho into A by hashing rho with a counter
@@ -188,7 +176,7 @@ class kyber_kem():
 
 
 
-    def kem_encapsulate(self, ek, bad_rng = False): 
+    def kem_encapsulate(self, ek, bad_rng = False, fixed_bytes = None): 
         """
         key encapsulation function for kyber-KEM
 
@@ -205,7 +193,7 @@ class kyber_kem():
         h = self._H(rho + t_bytes)
 
         if(bad_rng):
-            m = self.get_random_bytes(self.n//8)
+            m = fixed_bytes + self.get_random_bytes(self.n//8 - len(fixed_bytes))
         else:
             m = self.get_random_bytes(self.n//8)
 
@@ -270,8 +258,6 @@ def main():
     K_prime = KYBER_512.kem_decapsulate(u_bytes, v_bytes, dk)
     print("SECRET KEY DECAPSULATED: ")
     print_bytes(K_prime)
-
-    
 
 if __name__ == "__main__":
     main()
